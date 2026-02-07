@@ -131,7 +131,7 @@ class MarkdownEditingController extends TextEditingController {
         RegExp(r'(`)([^`]+)(`)'),
         (match) => TextStyle(
           fontFamily: 'monospace',
-          backgroundColor: Colors.grey.shade200,
+          backgroundColor: Colors.grey.shade200.withOpacity(0.5),
         ),
         type: _PatternType.inline,
       ),
@@ -140,7 +140,7 @@ class MarkdownEditingController extends TextEditingController {
         RegExp(r'(```)([\s\S]*?)(```)'),
         (match) => TextStyle(
           fontFamily: 'monospace',
-          backgroundColor: Colors.grey.shade200,
+          backgroundColor: Colors.grey.shade200.withOpacity(0.5),
         ),
         // Code blocks are usually multiline, treating as inline wrapper for now
         // But the regex captures start/content/end groups
