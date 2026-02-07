@@ -135,7 +135,14 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         controller: _controller,
         onChanged: widget.onChanged,
         style: widget.style,
-        decoration: widget.decoration,
+        decoration: widget.decoration?.copyWith(
+          contentPadding: widget.decoration?.contentPadding ??
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+        ) ??
+            const InputDecoration(
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ),
         maxLines: null,
         keyboardType: TextInputType.multiline,
       ),
