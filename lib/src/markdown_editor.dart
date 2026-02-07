@@ -26,12 +26,19 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   void initState() {
     super.initState();
     _controller = MarkdownEditingController(text: widget.initialValue);
+    _controller.addListener(_onSelectionChanged);
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_onSelectionChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onSelectionChanged() {
+    // Update focused line whenever selection changes
+    _controller.updateFocusedLineFromSelection();
   }
 
   @override
