@@ -45,7 +45,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   }
 
   void _onSelectionChanged() {
-    // Update focused line whenever selection changes
     _controller.updateFocusedLineFromSelection();
   }
 
@@ -67,7 +66,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   static final _orderedListPattern = RegExp(r'^([ \t]*)(\d+)(\.)([ \t]+)(.*)$');
 
   /// Handles Enter key press for list continuation.
-  /// Returns true if the event was handled, false otherwise.
   bool _handleListContinuation() {
     final text = _controller.value.text;
     final selection = _controller.value.selection;
@@ -88,10 +86,8 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       final content = unorderedMatch.group(4)!;
 
       if (content.isEmpty) {
-        // Empty list item - remove the prefix and exit list mode
         _removeListPrefix(lineStart, lineEnd);
       } else {
-        // Continue the list with same prefix
         _insertNewListItem(cursorOffset, '$indent$bullet$space');
       }
       return true;
@@ -107,10 +103,8 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       final content = orderedMatch.group(5)!;
 
       if (content.isEmpty) {
-        // Empty list item - remove the prefix and exit list mode
         _removeListPrefix(lineStart, lineEnd);
       } else {
-        // Continue the list with incremented number
         _insertNewListItem(cursorOffset, '$indent${number + 1}$dot$space');
       }
       return true;
@@ -137,7 +131,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
   void _removeListPrefix(int lineStart, int lineEnd) {
     final text = _controller.value.text;
 
-    // If this is the first line, just clear it
     if (lineStart == 0) {
       final newText = text.substring(lineEnd);
       _controller.value = TextEditingValue(
@@ -155,7 +148,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
     }
   }
 
-  /// Returns the start and end offsets for a given line number (0-indexed).
   (int, int) _getLineRange(int lineNumber) {
     final text = _controller.value.text;
     int currentLine = 0;
@@ -175,7 +167,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       }
     }
 
-    // Last line (no trailing newline)
     if (currentLine == lineNumber) {
       return (lineStart, text.length);
     }
@@ -204,7 +195,6 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         ),
       );
     } else {
-      // Indent selected lines
       _indentSelectedLines(tabString);
     }
   }

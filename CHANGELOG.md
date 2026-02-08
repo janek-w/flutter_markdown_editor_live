@@ -1,3 +1,3 @@
-## 0.1.0
+## 0.1.1
 
-* initial release with basic markdown support.
+* replace depricated "withOpacity" with "withValues"
