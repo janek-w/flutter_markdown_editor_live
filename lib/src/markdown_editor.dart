@@ -54,7 +54,133 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
       _insertTab();
       return KeyEventResult.handled;
     }
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.enter) {
+      if (_handleListContinuation()) {
+        return KeyEventResult.handled;
+      }
+    }
     return KeyEventResult.ignored;
+  }
+
+  /// Regex patterns for detecting list items
+  static final _unorderedListPattern = RegExp(r'^([ \t]*)([*+-])([ \t]+)(.*)$');
+  static final _orderedListPattern = RegExp(r'^([ \t]*)(\d+)(\.)([ \t]+)(.*)$');
+
+  /// Handles Enter key press for list continuation.
+  /// Returns true if the event was handled, false otherwise.
+  bool _handleListContinuation() {
+    final text = _controller.value.text;
+    final selection = _controller.value.selection;
+
+    if (!selection.isValid || !selection.isCollapsed) return false;
+
+    final cursorOffset = selection.baseOffset;
+    final lineNumber = _getLineNumber(cursorOffset);
+    final (lineStart, lineEnd) = _getLineRange(lineNumber);
+    final currentLine = text.substring(lineStart, lineEnd);
+
+    // Check for unordered list
+    final unorderedMatch = _unorderedListPattern.firstMatch(currentLine);
+    if (unorderedMatch != null) {
+      final indent = unorderedMatch.group(1)!;
+      final bullet = unorderedMatch.group(2)!;
+      final space = unorderedMatch.group(3)!;
+      final content = unorderedMatch.group(4)!;
+
+      if (content.isEmpty) {
+        // Empty list item - remove the prefix and exit list mode
+        _removeListPrefix(lineStart, lineEnd);
+      } else {
+        // Continue the list with same prefix
+        _insertNewListItem(cursorOffset, '$indent$bullet$space');
+      }
+      return true;
+    }
+
+    // Check for ordered list
+    final orderedMatch = _orderedListPattern.firstMatch(currentLine);
+    if (orderedMatch != null) {
+      final indent = orderedMatch.group(1)!;
+      final number = int.parse(orderedMatch.group(2)!);
+      final dot = orderedMatch.group(3)!;
+      final space = orderedMatch.group(4)!;
+      final content = orderedMatch.group(5)!;
+
+      if (content.isEmpty) {
+        // Empty list item - remove the prefix and exit list mode
+        _removeListPrefix(lineStart, lineEnd);
+      } else {
+        // Continue the list with incremented number
+        _insertNewListItem(cursorOffset, '$indent${number + 1}$dot$space');
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /// Inserts a new line with the given list prefix at the cursor position.
+  void _insertNewListItem(int cursorOffset, String prefix) {
+    final text = _controller.value.text;
+    final newText =
+        '${text.substring(0, cursorOffset)}\n$prefix${text.substring(cursorOffset)}';
+
+    _controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(
+        offset: cursorOffset + 1 + prefix.length,
+      ),
+    );
+  }
+
+  /// Removes the list prefix from the current line, leaving just the newline.
+  void _removeListPrefix(int lineStart, int lineEnd) {
+    final text = _controller.value.text;
+
+    // If this is the first line, just clear it
+    if (lineStart == 0) {
+      final newText = text.substring(lineEnd);
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    } else {
+      // Remove the previous newline and the entire line content
+      final newText =
+          text.substring(0, lineStart - 1) + text.substring(lineEnd);
+      _controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: lineStart - 1),
+      );
+    }
+  }
+
+  /// Returns the start and end offsets for a given line number (0-indexed).
+  (int, int) _getLineRange(int lineNumber) {
+    final text = _controller.value.text;
+    int currentLine = 0;
+    int lineStart = 0;
+
+    for (int i = 0; i < text.length; i++) {
+      if (currentLine == lineNumber) {
+        int lineEnd = i;
+        while (lineEnd < text.length && text[lineEnd] != '\n') {
+          lineEnd++;
+        }
+        return (lineStart, lineEnd);
+      }
+      if (text[i] == '\n') {
+        currentLine++;
+        lineStart = i + 1;
+      }
+    }
+
+    // Last line (no trailing newline)
+    if (currentLine == lineNumber) {
+      return (lineStart, text.length);
+    }
+
+    return (0, 0);
   }
 
   void _insertTab() {
@@ -67,7 +193,8 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
 
     if (selection.isCollapsed) {
       // Insert tab at cursor position
-      final newText = text.substring(0, selection.baseOffset) +
+      final newText =
+          text.substring(0, selection.baseOffset) +
           tabString +
           text.substring(selection.baseOffset);
       _controller.value = TextEditingValue(
@@ -135,13 +262,17 @@ class _MarkdownEditorState extends State<MarkdownEditor> {
         controller: _controller,
         onChanged: widget.onChanged,
         style: widget.style,
-        decoration: widget.decoration?.copyWith(
-          contentPadding: widget.decoration?.contentPadding ??
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        ) ??
-            const InputDecoration(
+        decoration:
+            widget.decoration?.copyWith(
               contentPadding:
-                  EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  widget.decoration?.contentPadding ??
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            ) ??
+            const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 16,
+              ),
             ),
         maxLines: null,
         keyboardType: TextInputType.multiline,
